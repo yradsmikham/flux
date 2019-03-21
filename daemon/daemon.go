@@ -649,7 +649,10 @@ func (d *Daemon) WithClone(ctx context.Context, fn func(*git.Checkout) error) er
 // unknown source.
 func (d *Daemon) LatestValidRevision(ctx context.Context, currentRevision string) (string, error) {
 	newRevision, err := d.Repo.Revision(ctx, d.GitConfig.Branch)
-	if !d.GitConfig.VerifySignatures || err != nil {
+	if err != nil {
+		return currentRevision, err
+	}
+	if !d.GitConfig.VerifySignatures {
 		return newRevision, err
 	}
 
@@ -668,7 +671,7 @@ func (d *Daemon) LatestValidRevision(ctx context.Context, currentRevision string
 	}
 
 	if err != nil {
-		return "", err
+		return currentRevision, err
 	}
 
 	for i := len(commits) - 1; i >= 0; i-- {
@@ -677,7 +680,7 @@ func (d *Daemon) LatestValidRevision(ctx context.Context, currentRevision string
 			if i+1 < len(commits) {
 				return commits[i+1].Revision, nil
 			}
-			return "", nil
+			return currentRevision, nil
 		}
 	}
 
