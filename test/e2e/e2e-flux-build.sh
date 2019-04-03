@@ -12,7 +12,7 @@ set -o errexit
 
 source $(dirname $0)/e2e-paths.env
 
-echo ">>> Installing go dep to $GOPATH/bin"
+echo ">>> Installing go dep to $GOBIN"
 curl https://raw.githubusercontent.com/golang/dep/master/install.sh | sh
 dep ensure -vendor-only
 

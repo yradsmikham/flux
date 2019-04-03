@@ -15,7 +15,7 @@ if ! [ -f "$BASE/bin/kubectl" ]; then
     mv kubectl $BASE/bin/
 fi
 
-echo ">>> Building sigs.k8s.io/kind"
+echo ">>> Building sigs.k8s.io/kind into $GOBIN/"
 go get sigs.k8s.io/kind
 
 echo ">>> Creating kind cluster"

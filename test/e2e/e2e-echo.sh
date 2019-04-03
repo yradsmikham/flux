@@ -8,4 +8,4 @@ source $(dirname $0)/e2e-paths.env
 
 echo REPO_ROOT=$REPO_ROOT
 echo BASE=$BASE
-echo GOPATH=$GOPATH
+echo GOBIN=$GOBIN
