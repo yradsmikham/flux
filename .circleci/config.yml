@@ -1,7 +1,7 @@
 version: 2
 jobs:
   build:
-    working_directory: /go/src/github.com/weaveworks/flux
+    working_directory: ~/go/src/github.com/weaveworks/flux
     docker:
       - image: circleci/golang:1.10
       - image: memcached
@@ -43,7 +43,7 @@ jobs:
     machine: true
     working_directory: ~/go/src/github.com/weaveworks/flux
     environment:
-      BASE: /go/src/github.com/weaveworks/flux
+      BASE: ~/go/src/github.com/weaveworks/flux
     steps:
       - checkout
       - run: test/e2e/e2e-golang.sh
