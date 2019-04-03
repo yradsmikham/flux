@@ -41,9 +41,9 @@ jobs:
             fi
   e2e-testing:
     machine: true
-    working_directory: /go/src/github.com/weaveworks/flux
+    working_directory: ~/go/src/github.com/weaveworks/flux
     environment:
-      BASE: /go/src/github.com/weaveworks/flux
+      GOPATH: ~/go
     steps:
       - checkout
       - run: test/e2e/e2e-echo.sh
