@@ -8,9 +8,9 @@ set -o errexit
 source $(dirname $0)/e2e-paths.env
 source $(dirname $0)/e2e-kube.env
 
-echo ">>> Installing Helm to $BASE/bin"
-if ! [ -f "$BASE/bin/helm" ]; then
-    curl https://raw.githubusercontent.com/kubernetes/helm/master/scripts/get | env HELM_INSTALL_DIR="$BASE/bin" USE_SUDO=false bash
+echo ">>> Installing Helm to $TOOLBIN"
+if ! [ -f "$TOOLBIN/helm" ]; then
+    curl https://raw.githubusercontent.com/kubernetes/helm/master/scripts/get | env HELM_INSTALL_DIR="$TOOLBIN" USE_SUDO=false bash
 fi
 
 echo '>>> Installing Tiller in cluster'

@@ -8,11 +8,11 @@ set -o errexit
 
 source $(dirname $0)/e2e-paths.env
 
-echo ">>> Installing kubectl to $BASE/bin/"
-if ! [ -f "$BASE/bin/kubectl" ]; then
+echo ">>> Installing kubectl to $TOOLBIN"
+if ! [ -f "$TOOLBIN/kubectl" ]; then
     curl -sLO https://storage.googleapis.com/kubernetes-release/release/$(curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt)/bin/linux/amd64/kubectl
     chmod +x kubectl
-    mv kubectl $BASE/bin/
+    mv kubectl $TOOLBIN/
 fi
 
 echo ">>> Building sigs.k8s.io/kind into $GOBIN/"
