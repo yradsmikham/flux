@@ -775,17 +775,20 @@ func latestValidRevision(ctx context.Context, repo *git.Repo, gitConfig git.Conf
 		return newRevision, invalidCommit, err
 	}
 
-	// Validate tag and the revision it points at to retrieve changeset
-	// of commits we need to validate.
+	// Validate tag and retrieve the revision it points to
 	tagRevision, err := repo.VerifyTag(ctx, gitConfig.SyncTag)
 	if err != nil && !strings.Contains(err.Error(), "not found.") {
-		return tagRevision, invalidCommit, errors.Wrap(err, "failed to verify signature of sync tag")
+		return "", invalidCommit, errors.Wrap(err, "failed to verify signature of sync tag")
 	}
 
 	var commits []git.Commit
 	if tagRevision == "" {
 		commits, err = repo.CommitsBefore(ctx, newRevision)
 	} else {
+		// Assure the revision from the tag is a signed and valid commit
+		if err = repo.VerifyCommit(ctx, tagRevision); err != nil {
+			return "", invalidCommit, errors.Wrap(err, "failed to verify signature of sync tag revision")
+		}
 		commits, err = repo.CommitsBetween(ctx, tagRevision, newRevision)
 	}
 
