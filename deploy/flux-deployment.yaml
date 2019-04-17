@@ -54,7 +54,7 @@ spec:
         # There are no ":latest" images for flux. Find the most recent
         # release or image version at https://quay.io/weaveworks/flux
         # and replace the tag here.
-        image: quay.io/weaveworks/flux:1.12.0
+        image: quay.io/weaveworks/flux
         imagePullPolicy: IfNotPresent
         resources:
           requests:
@@ -103,7 +103,7 @@ spec:
         - --ssh-keygen-dir=/var/fluxd/keygen
 
         # replace or remove the following URL
-        - --git-url=git@github.com:weaveworks/flux-get-started
+        - --git-url=git@github.com:yradsmikham/flux-get-started
         - --git-branch=master
         # include this if you want to restrict the manifests considered by flux
         # to those under the following relative paths in the git repository
