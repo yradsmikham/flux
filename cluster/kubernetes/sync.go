@@ -448,6 +448,7 @@ func (objs applyOrder) Less(i, j int) bool {
 }
 
 func (c *Kubectl) apply(logger log.Logger, cs changeSet, errored map[flux.ResourceID]error) (errs cluster.SyncError) {
+	fmt.Println("EXECUTING KUBECTL APPLY ZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZ")
 	f := func(objs []applyObject, cmd string, args ...string) {
 		if len(objs) == 0 {
 			return
