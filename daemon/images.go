@@ -14,18 +14,16 @@ import (
 	"github.com/weaveworks/flux/update"
 )
 
-func (d *Daemon) pollForNewImages(logger log.Logger) {
+func (d *Daemon) pollForNewImages(logger log.Logger) (retErr error) {
 	fmt.Println("--------------------------------- POLL FOR NEW IMAGES -----------------------------------")
-	//syncErrors := 0.0
+
 	logger.Log("msg", "polling images")
 	ctx := context.Background()
 
 	candidateWorkloads, err := d.getAllowedAutomatedResources(ctx)
 	if err != nil {
-		//syncErrors++
-		//fluxSyncErrors.Set(syncErrors)
 		logger.Log("error", errors.Wrap(err, "getting unlocked automated resources"))
-		return
+		return err
 	}
 	if len(candidateWorkloads) == 0 {
 		logger.Log("msg", "no automated workloads")
@@ -35,13 +33,13 @@ func (d *Daemon) pollForNewImages(logger log.Logger) {
 	workloads, err := d.Cluster.SomeWorkloads(candidateWorkloads.IDs())
 	if err != nil {
 		logger.Log("error", errors.Wrap(err, "checking workloads for new images"))
-		return
+		return err
 	}
 	// Check the latest available image(s) for each workload
 	imageRepos, err := update.FetchImageRepos(d.Registry, clusterContainers(workloads), logger)
 	if err != nil {
 		logger.Log("error", errors.Wrap(err, "fetching image updates"))
-		return
+		return err
 	}
 
 	changes := calculateChanges(logger, candidateWorkloads, workloads, imageRepos)
@@ -49,6 +47,7 @@ func (d *Daemon) pollForNewImages(logger log.Logger) {
 	if len(changes.Changes) > 0 {
 		d.UpdateManifests(ctx, update.Spec{Type: update.Auto, Spec: changes})
 	}
+	return nil
 }
 
 type resources map[flux.ResourceID]resource.Resource

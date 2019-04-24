@@ -41,7 +41,6 @@ func (loop *LoopVars) ensureInit() {
 
 func (d *Daemon) Loop(stop chan struct{}, wg *sync.WaitGroup, logger log.Logger) {
 	fmt.Println("--------------------------------- SYNC -----------------------------------")
-	//syncErrors := 0.0
 	defer wg.Done()
 
 	// We want to sync at least every `SyncInterval`. Being told to
@@ -77,7 +76,12 @@ func (d *Daemon) Loop(stop chan struct{}, wg *sync.WaitGroup, logger log.Logger)
 				default:
 				}
 			}
-			d.pollForNewImages(logger)
+			if err := d.pollForNewImages(logger); err != nil {
+				fluxSyncErrors.Set(1)
+				logger.Log("err", err)
+				fmt.Println("------------------------ Loop POLL NEW IMAGES Error ------------------------")
+			}
+			//d.pollForNewImages(logger)
 			imagePollTimer.Reset(d.RegistryPollInterval)
 		case <-imagePollTimer.C:
 			d.AskForImagePoll()
@@ -90,6 +94,7 @@ func (d *Daemon) Loop(stop chan struct{}, wg *sync.WaitGroup, logger log.Logger)
 			}
 			if err := d.doSync(logger, &lastKnownSyncTagRev, &warnedAboutSyncTagChange); err != nil {
 				//syncErrors++
+				//fluxSyncErrors(syncErrors)
 				fluxSyncErrors.Set(1)
 				logger.Log("err", err)
 				fmt.Println("------------------------ Loop SYNC ERRORS OCCURED ------------------------")
@@ -104,11 +109,11 @@ func (d *Daemon) Loop(stop chan struct{}, wg *sync.WaitGroup, logger log.Logger)
 			newSyncHead, err := d.Repo.Revision(ctx, d.GitConfig.Branch)
 			cancel()
 			if err != nil {
-				//syncErrors++
-				//fluxSyncErrors.Set(syncErrors)
 				logger.Log("url", d.Repo.Origin().URL, "err", err)
+				//fluxSyncErrors.Set(1)
 				continue
 			}
+			//fluxSyncErrors.Set(0)
 			logger.Log("event", "refreshed", "url", d.Repo.Origin().URL, "branch", d.GitConfig.Branch, "HEAD", newSyncHead)
 			if newSyncHead != syncHead {
 				syncHead = newSyncHead
