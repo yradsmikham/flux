@@ -44,4 +44,11 @@ var (
 		Name:      "queue_length_count",
 		Help:      "Count of jobs waiting in the queue to be run.",
 	}, []string{})
+
+	fluxSyncErrors = prometheus.NewGaugeFrom(stdprometheus.GaugeOpts{
+		Namespace: "flux",
+		Subsystem: "cluster",
+		Name:      "sync_errors",
+		Help:      "The number of errors that occur during sync",
+	}, []string{})
 )

@@ -471,6 +471,7 @@ func (c *Kubectl) apply(logger log.Logger, cs changeSet, errored map[flux.Resour
 	f := func(objs []applyObject, cmd string, args ...string) {
 		successCounter := 0.0
 		failureCounter := 0.0
+
 		if len(objs) == 0 {
 			return
 		}

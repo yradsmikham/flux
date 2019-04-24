@@ -15,12 +15,17 @@ import (
 )
 
 func (d *Daemon) pollForNewImages(logger log.Logger) {
+	fmt.Println("--------------------------------- POLL FOR NEW IMAGES -----------------------------------")
+	syncErrors := 0.0
 	logger.Log("msg", "polling images")
-
+	fmt.Println("ZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZ")
 	ctx := context.Background()
 
 	candidateWorkloads, err := d.getAllowedAutomatedResources(ctx)
+	fmt.Println("ZWWZWZWZWZZWZWZWZWZWZWZWZWZWZWZWZWZWZWZWZWZWZWZWZWZWZWZ")
 	if err != nil {
+		syncErrors++
+		fluxSyncErrors.Set(syncErrors)
 		logger.Log("error", errors.Wrap(err, "getting unlocked automated resources"))
 		return
 	}
