@@ -43,6 +43,8 @@ func (d *Daemon) Loop(stop chan struct{}, wg *sync.WaitGroup, logger log.Logger)
 	fmt.Println("--------------------------------- SYNC -----------------------------------")
 	defer wg.Done()
 
+	var erroredState bool = false
+
 	// We want to sync at least every `SyncInterval`. Being told to
 	// sync, or completing a job, may intervene (in which case,
 	// reschedule the next sync).
@@ -95,11 +97,14 @@ func (d *Daemon) Loop(stop chan struct{}, wg *sync.WaitGroup, logger log.Logger)
 			if err := d.doSync(logger, &lastKnownSyncTagRev, &warnedAboutSyncTagChange); err != nil {
 				//syncErrors++
 				//fluxSyncErrors(syncErrors)
-				fluxSyncErrors.Set(1)
+				if erroredState == false {
+					fluxSyncErrors.Set(1)
+					erroredState = true
+				} else {
+					continue
+				}
 				logger.Log("err", err)
 				fmt.Println("------------------------ Loop SYNC ERRORS OCCURED ------------------------")
-			} else {
-				fluxSyncErrors.Set(0)
 			}
 			syncTimer.Reset(d.SyncInterval)
 		case <-syncTimer.C:
@@ -110,10 +115,14 @@ func (d *Daemon) Loop(stop chan struct{}, wg *sync.WaitGroup, logger log.Logger)
 			cancel()
 			if err != nil {
 				logger.Log("url", d.Repo.Origin().URL, "err", err)
-				//fluxSyncErrors.Set(1)
+				if erroredState == false {
+					fluxSyncErrors.Set(1)
+					erroredState = true
+				} else {
+					continue
+				}
 				continue
 			}
-			//fluxSyncErrors.Set(0)
 			logger.Log("event", "refreshed", "url", d.Repo.Origin().URL, "branch", d.GitConfig.Branch, "HEAD", newSyncHead)
 			if newSyncHead != syncHead {
 				syncHead = newSyncHead
@@ -132,6 +141,12 @@ func (d *Daemon) Loop(stop chan struct{}, wg *sync.WaitGroup, logger log.Logger)
 				fluxmetrics.LabelSuccess, fmt.Sprint(err == nil),
 			).Observe(time.Since(start).Seconds())
 			if err != nil {
+				if erroredState == false {
+					fluxSyncErrors.Set(1)
+					erroredState = true
+				} else {
+					continue
+				}
 				jobLogger.Log("state", "done", "success", "false", "err", err)
 			} else {
 				jobLogger.Log("state", "done", "success", "true")
