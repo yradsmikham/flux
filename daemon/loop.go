@@ -40,10 +40,7 @@ func (loop *LoopVars) ensureInit() {
 }
 
 func (d *Daemon) Loop(stop chan struct{}, wg *sync.WaitGroup, logger log.Logger) {
-	fmt.Println("--------------------------------- SYNC -----------------------------------")
 	defer wg.Done()
-
-	var erroredState bool = false
 
 	// We want to sync at least every `SyncInterval`. Being told to
 	// sync, or completing a job, may intervene (in which case,
@@ -67,6 +64,8 @@ func (d *Daemon) Loop(stop chan struct{}, wg *sync.WaitGroup, logger log.Logger)
 			lastKnownSyncTagRev      string
 			warnedAboutSyncTagChange bool
 		)
+		var erroredState = false
+
 		select {
 		case <-stop:
 			logger.Log("stopping", "true")
@@ -79,9 +78,11 @@ func (d *Daemon) Loop(stop chan struct{}, wg *sync.WaitGroup, logger log.Logger)
 				}
 			}
 			if err := d.pollForNewImages(logger); err != nil {
-				fluxSyncErrors.Set(1)
+				if erroredState == false {
+					fluxSyncErrors.Set(1)
+					erroredState = true
+				}
 				logger.Log("err", err)
-				fmt.Println("------------------------ Loop POLL NEW IMAGES Error ------------------------")
 			}
 			//d.pollForNewImages(logger)
 			imagePollTimer.Reset(d.RegistryPollInterval)
@@ -95,16 +96,11 @@ func (d *Daemon) Loop(stop chan struct{}, wg *sync.WaitGroup, logger log.Logger)
 				}
 			}
 			if err := d.doSync(logger, &lastKnownSyncTagRev, &warnedAboutSyncTagChange); err != nil {
-				//syncErrors++
-				//fluxSyncErrors(syncErrors)
 				if erroredState == false {
 					fluxSyncErrors.Set(1)
 					erroredState = true
-				} else {
-					continue
 				}
 				logger.Log("err", err)
-				fmt.Println("------------------------ Loop SYNC ERRORS OCCURED ------------------------")
 			}
 			syncTimer.Reset(d.SyncInterval)
 		case <-syncTimer.C:
@@ -118,8 +114,6 @@ func (d *Daemon) Loop(stop chan struct{}, wg *sync.WaitGroup, logger log.Logger)
 				if erroredState == false {
 					fluxSyncErrors.Set(1)
 					erroredState = true
-				} else {
-					continue
 				}
 				continue
 			}
@@ -144,8 +138,6 @@ func (d *Daemon) Loop(stop chan struct{}, wg *sync.WaitGroup, logger log.Logger)
 				if erroredState == false {
 					fluxSyncErrors.Set(1)
 					erroredState = true
-				} else {
-					continue
 				}
 				jobLogger.Log("state", "done", "success", "false", "err", err)
 			} else {
@@ -157,6 +149,10 @@ func (d *Daemon) Loop(stop chan struct{}, wg *sync.WaitGroup, logger log.Logger)
 				}
 				cancel()
 			}
+
+		}
+		if erroredState == false {
+			fluxSyncErrors.Set(0)
 		}
 	}
 }
@@ -182,7 +178,6 @@ func (d *LoopVars) AskForImagePoll() {
 // -- extra bits the loop needs
 
 func (d *Daemon) doSync(logger log.Logger, lastKnownSyncTagRev *string, warnedAboutSyncTagChange *bool) (retErr error) {
-	fmt.Println("--------------------------------- SYNC AGAIN -----------------------------------")
 	started := time.Now().UTC()
 	defer func() {
 		syncDuration.With(

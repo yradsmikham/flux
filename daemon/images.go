@@ -15,7 +15,6 @@ import (
 )
 
 func (d *Daemon) pollForNewImages(logger log.Logger) (retErr error) {
-	fmt.Println("--------------------------------- POLL FOR NEW IMAGES -----------------------------------")
 
 	logger.Log("msg", "polling images")
 	ctx := context.Background()

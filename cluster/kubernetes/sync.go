@@ -14,10 +14,8 @@ import (
 	"time"
 
 	"github.com/go-kit/kit/log"
-	prometheus "github.com/go-kit/kit/metrics/prometheus"
 	"github.com/imdario/mergo"
 	"github.com/pkg/errors"
-	stdprometheus "github.com/prometheus/client_golang/prometheus"
 	"gopkg.in/yaml.v2"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -449,28 +447,9 @@ func (objs applyOrder) Less(i, j int) bool {
 	return ranki < rankj
 }
 
-var (
-	fluxSuccessCounter = prometheus.NewGaugeFrom(stdprometheus.GaugeOpts{
-		Namespace: "flux",
-		Subsystem: "cluster",
-		Name:      "kubectl_apply_successes",
-		Help:      "Counter that depicts the number of successes",
-	}, []string{})
-
-	fluxFailCounter = prometheus.NewGaugeFrom(stdprometheus.GaugeOpts{
-		Namespace: "flux",
-		Subsystem: "cluster",
-		Name:      "kubectl_apply_failures",
-		Help:      "Counter that depicts the number of failures",
-	}, []string{})
-)
-
 func (c *Kubectl) apply(logger log.Logger, cs changeSet, errored map[flux.ResourceID]error) (errs cluster.SyncError) {
-	fmt.Println("------------------------ EXECUTING KUBECTL APPLY -------------------------")
 
 	f := func(objs []applyObject, cmd string, args ...string) {
-		successCounter := 0.0
-		failureCounter := 0.0
 
 		if len(objs) == 0 {
 			return
@@ -481,9 +460,6 @@ func (c *Kubectl) apply(logger log.Logger, cs changeSet, errored map[flux.Resour
 		var multi, single []applyObject
 		if len(errored) == 0 {
 			multi = objs
-			successCounter++
-			fluxSuccessCounter.Set(successCounter)
-			fluxFailCounter.Set(0)
 		} else {
 			for _, obj := range objs {
 				if _, ok := errored[obj.ResourceID]; ok {
@@ -504,9 +480,6 @@ func (c *Kubectl) apply(logger log.Logger, cs changeSet, errored map[flux.Resour
 		for _, obj := range single {
 			r := bytes.NewReader(obj.Payload)
 			if err := c.doCommand(logger, r, args...); err != nil {
-				failureCounter++
-				fluxFailCounter.Set(failureCounter)
-				fluxSuccessCounter.Set(0)
 				errs = append(errs, cluster.ResourceError{
 					ResourceID: obj.ResourceID,
 					Source:     obj.Source,
