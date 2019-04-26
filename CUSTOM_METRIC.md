@@ -1,16 +1,16 @@
 # Custom Flux Metric
 
-Weavework has their own set of instructions for (developing)[https://github.com/weaveworks/flux/blob/master/site/get-started-developing.md] Flux. Here, you will find a slightly different approach that is used to create a custom Flux metric and how to test it.
+Weavework has their own set of instructions for [developing](https://github.com/weaveworks/flux/blob/master/site/get-started-developing.md) Flux. Here, you will find a slightly different approach that is used to create a custom Flux metric and how to test it.
 
 Before getting started, be sure to follow the steps highlighted in the documentation for [building](https://github.com/weaveworks/flux/blob/master/site/building.md) Flux. It is important to know that Golang is very particular about where to put your repository relative to the `$GOPATH`. This README makes the assumption that you already have access to a Kubernetes cluster with Flux pod running locally.
 
 ### Build New Flux Image
 
-This method of testing uses a public (Docker Hub Repository)[https://hub.docker.com/] to store Flux images. So be sure to have the Docker application installed locally, and a Docker account. You will need to login to your Docker account via terminal if this is your first time. You can do this by running `docker login` and providing your credentials.
+This method of testing uses a public [Docker Hub Repository](https://hub.docker.com/) to store Flux images. So be sure to have the Docker application installed locally, and a Docker account. You will need to login to your Docker account via terminal if this is your first time. You can do this by running `docker login` and providing your credentials.
 
-Every time you make changes to the Flux source code, peform the following steps:
+Every time you make changes to the Flux source code, peform the following steps to rebuild a new image and push to your Docker Hub repository:
 
-1. run `make` (in the directory that contains the `Makefile`)
+1. run `make` (in the directory that contains the `Makefile`, e.g. `$GOPATH/src/github.com/weaveworks/flux`)
 2. `docker tag docker.io/weaveworks/flux:latest yradsmikham/flux:latest` (You will need to create a repository for this image in your Docker Hub account beforehand.)
 3. `docker push yradsmikham/flux:latest`
 
