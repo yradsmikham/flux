@@ -42,6 +42,13 @@ func (loop *LoopVars) ensureInit() {
 func (d *Daemon) Loop(stop chan struct{}, wg *sync.WaitGroup, logger log.Logger) {
 	defer wg.Done()
 
+	var (
+		syncPollImagesError = false
+		doSyncError         = false
+		syncRepoError       = false
+		syncJobsError       = false
+	)
+
 	// We want to sync at least every `SyncInterval`. Being told to
 	// sync, or completing a job, may intervene (in which case,
 	// reschedule the next sync).
@@ -64,7 +71,6 @@ func (d *Daemon) Loop(stop chan struct{}, wg *sync.WaitGroup, logger log.Logger)
 			lastKnownSyncTagRev      string
 			warnedAboutSyncTagChange bool
 		)
-		var erroredState = false
 
 		select {
 		case <-stop:
@@ -78,11 +84,13 @@ func (d *Daemon) Loop(stop chan struct{}, wg *sync.WaitGroup, logger log.Logger)
 				}
 			}
 			if err := d.pollForNewImages(logger); err != nil {
-				if erroredState == false {
+				if syncPollImagesError == false {
 					fluxSyncErrors.Set(1)
-					erroredState = true
+					syncPollImagesError = true
 				}
 				logger.Log("err", err)
+			} else {
+				syncPollImagesError = false
 			}
 			//d.pollForNewImages(logger)
 			imagePollTimer.Reset(d.RegistryPollInterval)
@@ -96,11 +104,13 @@ func (d *Daemon) Loop(stop chan struct{}, wg *sync.WaitGroup, logger log.Logger)
 				}
 			}
 			if err := d.doSync(logger, &lastKnownSyncTagRev, &warnedAboutSyncTagChange); err != nil {
-				if erroredState == false {
+				if doSyncError == false {
 					fluxSyncErrors.Set(1)
-					erroredState = true
+					doSyncError = true
 				}
 				logger.Log("err", err)
+			} else {
+				doSyncError = false
 			}
 			syncTimer.Reset(d.SyncInterval)
 		case <-syncTimer.C:
@@ -111,11 +121,13 @@ func (d *Daemon) Loop(stop chan struct{}, wg *sync.WaitGroup, logger log.Logger)
 			cancel()
 			if err != nil {
 				logger.Log("url", d.Repo.Origin().URL, "err", err)
-				if erroredState == false {
+				if syncRepoError == false {
 					fluxSyncErrors.Set(1)
-					erroredState = true
+					syncRepoError = true
 				}
 				continue
+			} else {
+				syncRepoError = false
 			}
 			logger.Log("event", "refreshed", "url", d.Repo.Origin().URL, "branch", d.GitConfig.Branch, "HEAD", newSyncHead)
 			if newSyncHead != syncHead {
@@ -135,9 +147,9 @@ func (d *Daemon) Loop(stop chan struct{}, wg *sync.WaitGroup, logger log.Logger)
 				fluxmetrics.LabelSuccess, fmt.Sprint(err == nil),
 			).Observe(time.Since(start).Seconds())
 			if err != nil {
-				if erroredState == false {
+				if syncJobsError == false {
 					fluxSyncErrors.Set(1)
-					erroredState = true
+					syncJobsError = true
 				}
 				jobLogger.Log("state", "done", "success", "false", "err", err)
 			} else {
@@ -148,11 +160,13 @@ func (d *Daemon) Loop(stop chan struct{}, wg *sync.WaitGroup, logger log.Logger)
 					logger.Log("err", err)
 				}
 				cancel()
+				syncJobsError = false
 			}
-
 		}
-		if erroredState == false {
+		if syncPollImagesError == false && syncJobsError == false && doSyncError == false && syncRepoError == false {
 			fluxSyncErrors.Set(0)
+		} else {
+			fluxSyncErrors.Set(1)
 		}
 	}
 }
@@ -178,6 +192,7 @@ func (d *LoopVars) AskForImagePoll() {
 // -- extra bits the loop needs
 
 func (d *Daemon) doSync(logger log.Logger, lastKnownSyncTagRev *string, warnedAboutSyncTagChange *bool) (retErr error) {
+	fmt.Println("--------------------------------- SYNC AGAIN -----------------------------------")
 	started := time.Now().UTC()
 	defer func() {
 		syncDuration.With(
